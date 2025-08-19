@@ -51,6 +51,7 @@ const getPlans = (req, res) => {
 
 //stripe payment
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
 const createCheckOut = async (req, res) => {
   try {
     const { plan, userId } = req.body;
@@ -79,8 +80,8 @@ const createCheckOut = async (req, res) => {
           quantity: 1,
         },
       ],
-      // success_url: "http://localhost:3000/success",
-      // cancel_url: "http://localhost:3000/cancel",
+      success_url: "https://membershippaymentapi.onrender.com/success",
+      cancel_url: "https://membershippaymentapi.onrender.com/cancel",
     });
 
     const payment = await Payment.create({
@@ -91,12 +92,20 @@ const createCheckOut = async (req, res) => {
       stripeId: session.id,
     });
 
-    res.json({ message: 'payment made', paymentId: payment._id });
+    res.json({ message: 'payment made', paymentId: payment._id, url:session.url });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
+
+const handleSuccess = (req, res) => {
+  res.status(200).json({ message: "Payment Successful"})
+}
+
+const handleFail = (req, res) => {
+  res.status(200).json({ message: "Error processing Payment... try again..."})
+}
 
 
 
@@ -203,5 +212,5 @@ module.exports = {
     createCheckOut,
     stripeWebhook,
     getAllPayments,
-    createPayout, handleSignUp, handleLogin
+    createPayout, handleSignUp, handleLogin, handleSuccess, handleFail
 }

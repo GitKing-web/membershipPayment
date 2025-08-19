@@ -1,10 +1,12 @@
 const { Router } = require('express');
-const { getPlans, createCheckOut, getAllPayments, createPayout, stripeWebhook, handleSignUp, handleLogin } = require('../controllers/route.controllers');
+const { getPlans, createCheckOut, getAllPayments, createPayout, stripeWebhook, handleSignUp, handleLogin, handleSuccess, handleFail } = require('../controllers/route.controllers');
 const { authMiddleware, adminMiddleware } = require('../middlewares/auth');
 const router=Router()
 
 
 router.get('/', getPlans)
+router.get('/success', handleSuccess)
+router.get('/cancel', handleFail)
 router.post('/register',handleSignUp)
 router.post('/login', handleLogin)
 router.post('/checkout', authMiddleware, createCheckOut)

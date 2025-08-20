@@ -39,6 +39,80 @@ const handleLogin = async (req, res) => {
       }
 }
 
+//admin auth
+
+const handleAdminSignUp = async (req, res) => {
+  try {
+    const { name, email, password, secretKey } = req.body;
+
+    if (secretKey !== process.env.ADMIN_SECRET) {
+      return res.status(403).json({ message: "Unauthorized to create admin" });
+    }
+
+    let user = await User.findOne({ email });
+    if (user) return res.status(400).json({ message: "Admin already exists" });
+
+    user = new User({ name, email, password, role: "admin" });
+    await user.save();
+
+    res.status(201).json({ 
+      user: { id: user._id, name: user.name, role: user.role }, 
+      message: "Admin account created successfully" 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const handleAdminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email, role: "admin" });
+    if (!user) return res.status(400).json({ message: "Invalid admin credentials" });
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid admin credentials" });
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: "3d"
+    });
+
+    res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getAdminDashboard = async (req, res) => {
+  try {
+    const payments = await Payment.find().populate("userId", "email name");
+
+    const totalBalance = payments
+      .filter(p => p.status === "paid")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    res.json({
+      welcome: `Welcome Admin ${req.user.id}`,
+      balance: `$${totalBalance}`, // or NGN if you switch
+      payments: payments.map(p => ({
+        id: p._id,
+        user: p.userId?.email || "Unknown",
+        plan: p.plan,
+        amount: p.amount,
+        status: p.status,
+        date: p.createdAt
+      }))
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load admin dashboard" });
+  }
+};
+
+
+
+
 const getPlans = (req, res) => {
     const plans = [    
         { name: "regular", price: 10000 },    
@@ -210,5 +284,6 @@ module.exports = {
     createCheckOut,
     stripeWebhook,
     getAllPayments,
-    createPayout, handleSignUp, handleLogin, handleSuccess, handleFail
+    createPayout, handleSignUp, handleLogin, handleSuccess, handleFail,
+    handleAdminLogin,handleAdminSignUp,getAdminDashboard
 }

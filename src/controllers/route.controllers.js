@@ -229,7 +229,42 @@ const getAllPayments = async (req, res) => {
   }
 };
 
-// controllers/payout.controller.js
+// Delete payment history
+
+const deletePayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedPayment = await Payment.findByIdAndDelete(id);
+
+    if (!deletedPayment) {
+      return res.status(404).json({ error: "Payment not found" });
+    }
+
+    res.json({ message: "Payment deleted successfully", payment: deletedPayment });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete payment" });
+  }
+};
+
+const deleteAllPayments = async (req, res) => {
+  try {
+    const { confirm } = req.body;
+
+    if (confirm !== "DELETE") {
+      return res.status(400).json({ error: "Invalid confirmation keyword" });
+    }
+
+    const result = await Payment.deleteMany({});
+    res.json({
+      message: "All payment history deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete all payments" });
+  }
+};
 
 
 // Trigger a payout to Admin’s bank (via Connect Account)
@@ -285,5 +320,6 @@ module.exports = {
     stripeWebhook,
     getAllPayments,
     createPayout, handleSignUp, handleLogin, handleSuccess, handleFail,
-    handleAdminLogin,handleAdminSignUp,getAdminDashboard
+    handleAdminLogin,handleAdminSignUp,getAdminDashboard,
+    deletePayment, deleteAllPayments
 }

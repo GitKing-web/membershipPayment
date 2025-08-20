@@ -269,47 +269,51 @@ const deleteAllPayments = async (req, res) => {
 
 // Trigger a payout to Admin’s bank (via Connect Account)
 const createPayout = async (req, res) => {
-    try {
-        const { paymentId, amount, currency, connectedAccountId } = req.body;
-    
-        // Validate
-        if (!paymentId || !amount || !currency || !connectedAccountId) {
-          return res.status(400).json({ error: "Missing required fields" });
-        }
-    
-        // 1. Trigger payout to Admin's connected account
-        const payout = await stripe.payouts.create(
-          {
-            amount,          // in kobo for NGN
-            currency,        // "ngn"
-          },
-          {
-            stripeAccount: connectedAccountId, // Admin’s Connect Account ID
-          }
-        );
-    
-        // 2. Update Payment in DB
-        const updatedPayment = await Payment.findByIdAndUpdate(
-          paymentId,
-          {
-            $set: {
-              "payout.payoutId": payout.id,
-              "payout.connectedAccountId": connectedAccountId,
-              "payout.amount": amount,
-              "payout.currency": currency,
-              "payout.status": payout.status,  // usually "paid"
-              "payout.date": new Date()
-            }
-          },
-          { new: true }
-        );
-    
-        res.json({ success: true, payout, updatedPayment });
-      } catch (err) {
-        console.error("Payout error:", err.message);
-        res.status(500).json({ error: "Payout failed" });
+  try {
+    const { amountUSD, connectedAccountId } = req.body;
+
+    if (!amountUSD || !connectedAccountId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Convert USD amount (stored in DB) to NGN equivalent
+    // Ideally use a live FX API, but for now assume conversion rate from env
+    const usdToNgnRate = process.env.USD_TO_NGN || 1500; // example: 1 USD = 1500 NGN
+    const amountNGN = Math.round(amountUSD * usdToNgnRate * 100); // kobo
+
+    // 1. Trigger payout to Admin's connected bank account
+    const payout = await stripe.payouts.create(
+      {
+        amount: amountNGN,
+        currency: "ngn", // always NGN for bank payout
+      },
+      {
+        stripeAccount: connectedAccountId,
       }
+    );
+
+    // 2. Log the payout separately (not tied to one paymentId, since payout can cover many payments)
+    const payoutRecord = {
+      payoutId: payout.id,
+      connectedAccountId,
+      amountUSD,
+      amountNGN,
+      currency: "ngn",
+      status: payout.status,
+      date: new Date(),
+    };
+
+    // Optional: Save payout logs in a separate "Payout" collection
+    // Or attach to admin’s dashboard stats
+    // For now, we just respond
+    res.json({ success: true, payout, payoutRecord });
+
+  } catch (err) {
+    console.error("Payout error:", err.message);
+    res.status(500).json({ error: "Payout failed", details: err.message });
+  }
 };
+
 
 
 

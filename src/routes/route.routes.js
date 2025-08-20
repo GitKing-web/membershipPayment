@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const express = require('express')
 const { getPlans, createCheckOut, getAllPayments, createPayout, stripeWebhook,
      handleSignUp, handleLogin, handleSuccess, handleFail, handleAdminSignUp, 
      handleAdminLogin,
@@ -15,7 +16,7 @@ router.get('/cancel', handleFail)
 router.post('/register',handleSignUp)
 router.post('/login', handleLogin)
 router.post('/checkout', authMiddleware, createCheckOut)
-router.post('/webhooks', stripeWebhook)
+router.post('/webhooks', express.raw({type: "application/json"}) ,stripeWebhook)
 
 //admin
 router.post("/admin/dia/signup", handleAdminSignUp);

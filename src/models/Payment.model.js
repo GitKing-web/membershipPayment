@@ -2,7 +2,7 @@ const { Schema, model, default: mongoose } = require('mongoose')
 
 const PaymentSchema = new Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
-    plan: { type: String, enum: ["bronze", "silver", "gold", "platinum"], required: true },
+    plan: { type: String, enum: ["regular", "Vip", "vVip"], required: true },
     amount: { type: Number, required: true },
     status: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
     stripeId: { type : String },

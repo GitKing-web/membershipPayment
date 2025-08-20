@@ -40,11 +40,10 @@ const handleLogin = async (req, res) => {
 }
 
 const getPlans = (req, res) => {
-    const plans = [
-        { name: "bronze", price: 5000 },     
-        { name: "silver", price: 10000 },    
-        { name: "gold", price: 20000 },      
-        { name: "platinum", price: 100000 } 
+    const plans = [    
+        { name: "regular", price: 10000 },    
+        { name: "Vip", price: 20000 },      
+        { name: "vVip", price: 100000 } 
       ];
       res.json(plans);
 }
@@ -57,10 +56,9 @@ const createCheckOut = async (req, res) => {
     const { plan, userId } = req.body;
 
     const priceMap = {
-      bronze: 5000,   // in cents ($50.00 if using USD)
-      silver: 10000,  // $100.00
-      gold: 20000,    // $200.00
-      platinum: 100000 // $1000.00
+      regular: 10000,  // $100.00
+      Vip: 20000,    // $200.00
+      vVip: 100000 // $1000.00
     };
 
     if (!priceMap[plan]) {
@@ -92,7 +90,7 @@ const createCheckOut = async (req, res) => {
       stripeId: session.id,
     });
 
-    res.json({ message: 'payment made', paymentId: payment._id, url:session.url });
+    res.json({ message: 'payment intent made', paymentId: payment._id, url:session.url });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
